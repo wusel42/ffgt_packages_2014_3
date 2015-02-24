@@ -14,7 +14,7 @@ define Package/gluon-config-mode-ffgt
   SECTION:=gluon
   CATEGORY:=Gluon
   TITLE:=Luci based config mode for user friendly setup of new mesh nodes
-  DEPENDS:=+gluon-luci-core +gluon-setup-mode +gluon-lock-password +gluon-node-info +gluon-simple-tc
+  DEPENDS:=+gluon-luci-core +gluon-setup-mode-ffgt +gluon-lock-password +gluon-node-info +gluon-simple-tc
   PROVIDES:=gluon-config-mode
 endef
 

@@ -80,7 +80,8 @@ function action_reboot()
 
     -- Sleep a little so the browser can fetch everything required to
     -- display the reboot page, then reboot the device.
-    nixio.nanosleep(2)
+    -- Actually, sleep 90 seconds, so the data can be sent off to the registration site.
+    nixio.nanosleep(90)
 
     -- Run reboot with popen so it gets its own std filehandles.
     io.popen("reboot")

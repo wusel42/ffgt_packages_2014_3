@@ -15,7 +15,6 @@ define Package/gluon-setup-mode-ffgt
   CATEGORY:=Gluon
   TITLE:=Setup mode
   DEPENDS:=+gluon-core +uhttpd +dnsmasq +ip
-  PROVIDES:=gluon-setup-mode
 endef
 
 define Package/gluon-setup-mode-ffgt/description

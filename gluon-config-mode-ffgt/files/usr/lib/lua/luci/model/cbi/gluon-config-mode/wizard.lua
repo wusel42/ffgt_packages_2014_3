@@ -22,6 +22,11 @@ else
   Bitte reaktiviere diese Funktion im <i>Expertmode</i>.]])
 end
 
+s = f:section(SimpleSection, nil, [[Bitte gib Deinem Knoten einen Namen. Sofern eine Internetverbindung
+besteht, hat der Knoten versucht, seine Position zu ermitteln und wird als Namensvorschlag
+die ermittelte Adresse angeben. Das ist nur ein Vorschlag, Du kannst auch einen anderen Namen
+w&auml;hlen. <i>Zul&auml;ssige Zeichen sind A-Z, a-z, 0-9 und der Bindestrich.</i>]])
+
 o = s:option(Value, "_hostname", "Name dieses Knotens")
 o.value = uci:get_first("system", "system", "hostname")
 o.rmempty = false
@@ -59,17 +64,27 @@ o.value = "500"
 o.rmempty = false
 o.datatype = "integer"
 
-s = f:section(SimpleSection, nil, [[Hier kannst du einen
-<em>&ouml;ffentlichen</em> Hinweis hinterlegen, um anderen Freifunkern zu
-erm&ouml;glichen, Kontakt mit dir aufzunehmen. Bitte beachte, dass dieser Hinweis
-auch &ouml;ffentlich im Internet, ggf. zusammen mit den Koordinaten deines Knotens,
-einsehbar sein wird.]])
+s = f:section(SimpleSection, nil, [[Bitte gib eine Telefonnummer an,
+unter der wir Dich ggf. erreichen k&ouml;nnen, falls es Probleme mit
+Deinem Knoten gibt (l&auml;ngerer Ausfall, fehlerhafte Funktion, &hellip;).]])
+
+o = s:option(Value, "_phone", "Telefon")
+o.default = uci:get_first("gluon-node-info", "owner", "phone", "")
+o.rmempty = true
+o.datatype = "string"
+o.description = "Telefonnummer"
+o.maxlen = 140
+
+s = f:section(SimpleSection, nil, [[Wir planen in Zukunft eine Benachrichtigung
+per eMail, sollte Dein Knoten l&auml;ngere Zeit (einige Tage) offline sein. Bitte
+gib hier eine eMail-Adresse an, die dafür sinnvoll ist. Bleibt das Feld leer, wird
+es keine Benachrichtigung geben.]])
 
 o = s:option(Value, "_contact", "Kontakt")
 o.default = uci:get_first("gluon-node-info", "owner", "contact", "")
 o.rmempty = true
 o.datatype = "string"
-o.description = "z.B. E-Mail oder Telefonnummer"
+o.description = "eMail-Adresse"
 o.maxlen = 140
 
 s = f:section(SimpleSection, nil, [[Um das Netz besser planen zu
@@ -146,9 +161,11 @@ function f.handle(self, state, data)
     uci:commit("fastd")
 
     local hostname = data._hostname
-    hostname = hostname:gsub(" ","_")
---    hostname = hostname:gsub("%.","_")
-    hostname = hostname:gsub("%,","_")
+    hostname = hostname:gsub(" ","-")
+    hostname = hostname:gsub("%.","-")
+    hostname = hostname:gsub(",","-")
+    hostname = hostname:gsub("_","-")
+    hostname = hostname:gsub("%-%-","-")
     hostname = hostname:sub(1, 63)
 
     uci:set("system", uci:get_first("system", "system"), "hostname", hostname)
@@ -167,6 +184,9 @@ function f.handle(self, state, data)
       uci:set("gluon-node-info", uci:get_first("gluon-node-info", "owner"), "contact", data._contact)
     else
       uci:delete("gluon-node-info", uci:get_first("gluon-node-info", "owner"), "contact")
+    end
+    if data._phone ~= nil then
+      uci:set("gluon-node-info", uci:get_first("gluon-node-info", "owner"), "phone", data._phone)
     end
     uci:save("gluon-node-info")
     uci:commit("gluon-node-info")

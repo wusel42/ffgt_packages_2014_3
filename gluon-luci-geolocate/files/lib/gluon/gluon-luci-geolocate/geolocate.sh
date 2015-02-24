@@ -1,24 +1,13 @@
 #!/bin/sh
-# This script is supposed to be run every minute via cron.
+# This script is supposed to be run (once) from lua
 
-# Sent WiFi info once. If geolocation isn't set, or if is_mobile node, fetch location and fill in geoloc data.
-# If is_mobile, do this every 15 Minutes. Otherwise, it should be done once (until succeeded).
-CURMIN=`/bin/date +%M`
-MODULO=`/usr/bin/expr ${CURMIN} % 15`
-mobile="`/sbin/uci get gluon-node-info.@location[0].is_mobile 2>/dev/null`"
-if [ $? -eq 1 ]; then
- mobile=0
-fi
 runnow=0
 isconfigured="`/sbin/uci get gluon-setup-mode.@setup_mode[0].configured 2>/dev/null`"
 if [ "$isconfigured" != "1" ]; then
  isconfigured=0
 fi
 
-if [ ! -e /tmp/run/wifi-data-sent ]; then
- runnow=1
-fi
-if [ ${mobile} -eq 1 -a ${MODULO} -eq 0 ]; then
+if [ ! -e /tmp/run/geolocate-data-sent ]; then
  runnow=1
 fi
 
@@ -45,18 +34,18 @@ if [ ${runnow} -eq 1 ]; then
  # actually want to get rid of ULA, so ...)
 
  mac=`/sbin/uci get network.bat0.macaddr`
+ # FIXME. On multiband devices, check wlan1 as well!
  /usr/sbin/iw dev wlan0 scan >/dev/null 2>&1
  if [ $? -ne 0 ]; then
   /sbin/ifconfig wlan0 up
   sleep 2
  fi
- /usr/bin/wget -q -O /dev/null "`/usr/sbin/iw dev wlan0 scan | /usr/bin/awk -v mac=$mac -v ipv4prefix=$IPVXPREFIX -f /lib/gluon/ffgt-geolocate/preparse.awk`" && /bin/touch /tmp/run/wifi-data-sent
+ /usr/bin/wget -q -O /dev/null "`/usr/sbin/iw dev wlan0 scan | /usr/bin/awk -v mac=$mac -v ipv4prefix=$IPVXPREFIX -f /lib/gluon/ffgt-geolocate/preparse.awk`" && /bin/touch /tmp/run/geolocate-data-sent
  # On success only ...
- if [ -e /tmp/run/wifi-data-sent ]; then
+ if [ -e /tmp/run/geolocate-data-sent ]; then
   curlat="`/sbin/uci get gluon-node-info.@location[0].longitude 2>/dev/null`"
-  mobile="`/sbin/uci get gluon-node-info.@location[0].is_mobile 2>/dev/null`"
-  if [ "X${curlat}" = "X" -o "X${mobile}" = "X1" ]; then
-   sleep 10
+  if [ "X${curlat}" = "X" ]; then
+   sleep 5
    /usr/bin/wget -q -O /tmp/geoloc.out "http://setup.${IPVXPREFIX}guetersloh.freifunk.net/geoloc.php?list=me&node=$mac"
    if [ -e /tmp/geoloc.out ]; then
     # Actually, we might want to sanity check the reply, as it could be empty or worse ... (FIXME) 
